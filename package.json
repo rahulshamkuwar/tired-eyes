@@ -32,11 +32,12 @@
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.21",
     "electron": "36.1.0",
+    "esbuild": "^0.25.4",
+    "esbuild-register": "^3.6.0",
     "eslint": "^8.57.1",
     "eslint-import-resolver-typescript": "^4.3.4",
     "eslint-plugin-import": "^2.31.0",
     "tailwindcss": "^4.1.5",
-    "ts-node": "^10.9.2",
     "typescript": "~4.5.4",
     "vite": "^5.4.19"
   },
