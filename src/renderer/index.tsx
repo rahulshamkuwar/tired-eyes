@@ -3,8 +3,9 @@ import ReactDOM from "react-dom/client";
 import App from "./components/App";
 import BreakScreen from "./components/BreakScreen";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { TimerProvider } from "./contexts/TimerContext";
 import "./styles/index.css";
-import "@shared/types"; // This ensures the Window interface extension is included
+import "../shared/types"; // Fix the import path
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -47,7 +48,9 @@ function renderMainApp() {
   root.render(
     <React.StrictMode>
       <ThemeProvider>
-        <App />
+        <TimerProvider>
+          <App />
+        </TimerProvider>
       </ThemeProvider>
     </React.StrictMode>
   );

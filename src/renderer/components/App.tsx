@@ -27,6 +27,24 @@ const App: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
+  // Listen for navigation events from main process
+  useEffect(() => {
+    // Only set up listener if electronAPI is available
+    if (window.electronAPI && window.electronAPI.onNavigate) {
+      // Listen for navigation events
+      const cleanupListener = window.electronAPI.onNavigate((route) => {
+        if (route === "/settings") {
+          setCurrentPage("settings");
+        } else if (route === "/timer") {
+          setCurrentPage("timer");
+        }
+      });
+
+      // Clean up listener when component unmounts
+      return cleanupListener;
+    }
+  }, []);
+
   // Styles
   const rootStyle: React.CSSProperties = {
     fontFamily: "'Inter', sans-serif",
@@ -73,6 +91,7 @@ const App: React.FC = () => {
     padding: "0.5rem 0.75rem",
     borderRadius: "0.375rem",
     transition: "background-color 0.15s ease",
+    cursor: "pointer",
   };
 
   const navLinkActiveStyle: React.CSSProperties = {

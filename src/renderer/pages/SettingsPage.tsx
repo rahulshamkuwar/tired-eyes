@@ -10,6 +10,7 @@ const SettingsPage: React.FC = () => {
     breakDuration: 20, // 20 seconds minimum
     workDuration: 20, // 20 minutes by default
     theme: themePreference, // Use current theme from ThemeContext
+    closeToTray: true, // Default to closing to tray
   });
 
   // Check for dark mode
@@ -263,6 +264,8 @@ const SettingsPage: React.FC = () => {
             <p style={infoTextStyle}>How long to work before taking a break</p>
           </div>
 
+          <h2 style={subheaderStyle}>Application Settings</h2>
+
           <div style={formGroupStyle}>
             <label style={labelStyle}>Theme</label>
             <select
@@ -276,6 +279,27 @@ const SettingsPage: React.FC = () => {
               <option value="system">System Default</option>
             </select>
             <p style={infoTextStyle}>Choose your preferred app theme</p>
+          </div>
+
+          <div style={formGroupStyle}>
+            <label style={labelStyle}>When Closing the Window</label>
+            <select
+              name="closeToTray"
+              value={settings.closeToTray.toString()}
+              onChange={(e) => {
+                setSettings((prev) => ({
+                  ...prev,
+                  closeToTray: e.target.value === "true",
+                }));
+              }}
+              style={selectStyle}
+            >
+              <option value="true">Minimize to Tray</option>
+              <option value="false">Exit Application</option>
+            </select>
+            <p style={infoTextStyle}>
+              Choose what happens when you close the application window
+            </p>
           </div>
 
           <button type="submit" style={primaryButtonStyle}>

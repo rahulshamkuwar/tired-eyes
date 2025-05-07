@@ -5,6 +5,8 @@ import {
   Notification,
   screen,
   nativeTheme,
+  Tray,
+  Menu,
 } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
@@ -23,6 +25,8 @@ if (started) {
 // Define app windows
 let mainWindow: BrowserWindow | null = null;
 let breakWindow: ExtendedBrowserWindow | null = null;
+let tray: Tray | null = null;
+let isAppQuitting = false;
 
 // Define default settings
 const defaultSettings: AppSettings = {
@@ -30,6 +34,7 @@ const defaultSettings: AppSettings = {
   breakDuration: 20,
   workDuration: 20,
   theme: "system", // Default to system theme
+  closeToTray: true, // Default to close to tray
 };
 
 // Create the settings store
@@ -52,6 +57,72 @@ const applyTheme = () => {
   } else {
     nativeTheme.themeSource = "system";
   }
+};
+
+// Create the tray icon
+const createTray = () => {
+  // Get the appropriate icon based on platform
+  let iconPath: string;
+
+  if (process.platform === "darwin") {
+    // macOS - use template icon (must be a black-and-white icon ending with 'Template')
+    iconPath = path.join(__dirname, "../../assets/trayIcon.png");
+  } else if (process.platform === "win32") {
+    // Windows - use ICO
+    iconPath = path.join(__dirname, "../../assets/trayIcon.ico");
+  } else {
+    // Linux - use PNG
+    iconPath = path.join(__dirname, "../../assets/trayIcon.png");
+  }
+
+  // Create tray
+  tray = new Tray(iconPath);
+
+  // Set tooltip
+  tray.setToolTip("Tired Eyes");
+
+  // Create right-click menu
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Open",
+      click: () => {
+        if (!mainWindow) {
+          createWindow();
+        } else {
+          mainWindow.show();
+        }
+      },
+    },
+    {
+      label: "Settings",
+      click: () => {
+        if (!mainWindow) {
+          createWindow();
+        }
+        mainWindow?.show();
+        mainWindow?.webContents.send("navigate-to-settings");
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Quit",
+      click: () => {
+        app.quit();
+      },
+    },
+  ]);
+
+  // Set the context menu
+  tray.setContextMenu(contextMenu);
+
+  // Clicking on the tray icon should open the app
+  tray.on("click", () => {
+    if (!mainWindow) {
+      createWindow();
+    } else {
+      mainWindow.show();
+    }
+  });
 };
 
 const createWindow = () => {
@@ -85,6 +156,20 @@ const createWindow = () => {
   // Show window when ready
   mainWindow.on("ready-to-show", () => {
     mainWindow?.show();
+  });
+
+  // Handle close event
+  mainWindow.on("close", (event) => {
+    const settings = settingsStore.store;
+
+    // If closeToTray is enabled and app is not quitting, prevent default behavior
+    if (settings.closeToTray && !isAppQuitting) {
+      event.preventDefault();
+      mainWindow?.hide();
+      return false;
+    }
+
+    return true;
   });
 };
 
@@ -181,7 +266,13 @@ const showNormalNotification = (message: string) => {
 // Some APIs can only be used after this event occurs.
 app.on("ready", () => {
   createWindow();
+  createTray();
   applyTheme();
+});
+
+// Store quitting state
+app.on("before-quit", () => {
+  isAppQuitting = true;
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

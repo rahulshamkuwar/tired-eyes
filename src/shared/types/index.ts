@@ -8,6 +8,7 @@ export interface AppSettings {
   breakDuration: number; // in seconds
   workDuration: number; // in minutes
   theme: "light" | "dark" | "system"; // Theme preference
+  closeToTray: boolean; // Whether to minimize to tray on close instead of quitting
 }
 
 export interface ElectronAPI {
@@ -16,6 +17,7 @@ export interface ElectronAPI {
   getSettings: () => Promise<AppSettings>;
   isBreakWindow: () => boolean;
   getSystemTheme: () => Promise<"light" | "dark">;
+  onNavigate: (callback: (route: string) => void) => () => void;
 }
 
 export interface BreakData {

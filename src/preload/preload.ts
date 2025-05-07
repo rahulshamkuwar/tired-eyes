@@ -31,6 +31,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getSystemTheme: () => {
     return ipcRenderer.invoke("get-system-theme") as Promise<"light" | "dark">;
   },
+
+  // Add an event listener for navigation events from the main process
+  onNavigate: (callback: (route: string) => void) => {
+    ipcRenderer.on("navigate-to-settings", () => callback("/settings"));
+
+    // Return a cleanup function
+    return () => {
+      ipcRenderer.removeAllListeners("navigate-to-settings");
+    };
+  },
 });
 
 // Access to window.breakData in the renderer process
