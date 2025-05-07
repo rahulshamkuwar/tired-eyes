@@ -1,0 +1,4 @@
+tsx
+vite
+Vite
+json
