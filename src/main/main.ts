@@ -2,11 +2,13 @@ import {
   app,
   BrowserWindow,
   ipcMain,
+  IpcMainInvokeEvent,
   Notification,
   screen,
   nativeTheme,
   Tray,
   Menu,
+  Event,
 } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
@@ -159,7 +161,7 @@ const createWindow = () => {
   });
 
   // Handle close event
-  mainWindow.on("close", (event) => {
+  mainWindow.on("close", (event: Event) => {
     const settings = settingsStore.store;
 
     // If closeToTray is enabled and app is not quitting, prevent default behavior
@@ -293,33 +295,39 @@ app.on("activate", () => {
 });
 
 // Handle IPC messages from the renderer process
-ipcMain.handle("show-notification", (_, options: NotificationOptions) => {
-  // Ensure only one notification mechanism is used
-  switch (options.type) {
-    case "fullscreen":
-      // For fullscreen notifications, create a break window
-      createBreakWindow(options.duration);
-      break;
-    case "normal":
-    default:
-      // For normal notifications, use Electron's Notification API
-      showNormalNotification(options.message);
-      break;
-  }
+ipcMain.handle(
+  "show-notification",
+  (_: IpcMainInvokeEvent, options: NotificationOptions) => {
+    // Ensure only one notification mechanism is used
+    switch (options.type) {
+      case "fullscreen":
+        // For fullscreen notifications, create a break window
+        createBreakWindow(options.duration);
+        break;
+      case "normal":
+      default:
+        // For normal notifications, use Electron's Notification API
+        showNormalNotification(options.message);
+        break;
+    }
 
-  // Return success to prevent any additional notification attempts
-  return true;
-});
+    // Return success to prevent any additional notification attempts
+    return true;
+  }
+);
 
 // Handle settings IPC
-ipcMain.handle("save-settings", (_, settings: AppSettings) => {
-  settingsStore.set(settings);
+ipcMain.handle(
+  "save-settings",
+  (_: IpcMainInvokeEvent, settings: AppSettings) => {
+    settingsStore.set(settings);
 
-  // Apply theme when settings are saved
-  applyTheme();
+    // Apply theme when settings are saved
+    applyTheme();
 
-  return true;
-});
+    return true;
+  }
+);
 
 ipcMain.handle("get-settings", () => {
   const settings = settingsStore.store;
@@ -327,7 +335,7 @@ ipcMain.handle("get-settings", () => {
 });
 
 // Handle break window IPC
-ipcMain.handle("get-break-duration", (event) => {
+ipcMain.handle("get-break-duration", (event: IpcMainInvokeEvent) => {
   // Get the sender window
   const win = BrowserWindow.fromWebContents(
     event.sender
@@ -340,7 +348,7 @@ ipcMain.handle("get-break-duration", (event) => {
   return 20;
 });
 
-ipcMain.handle("close-break-window", (event) => {
+ipcMain.handle("close-break-window", (event: IpcMainInvokeEvent) => {
   // Get the sender window
   const win = BrowserWindow.fromWebContents(event.sender);
   // Close it if it exists

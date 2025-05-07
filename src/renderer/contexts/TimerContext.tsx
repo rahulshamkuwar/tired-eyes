@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useContext,
   useCallback,
+  useRef,
 } from "react";
 import { AppSettings } from "../../shared/types";
 
@@ -33,9 +34,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const settingsRef = useRef<AppSettings>(defaultSettings);
   const [timeLeft, setTimeLeft] = useState(settings.workDuration * 60);
   const [isBreak, setIsBreak] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const isInitialLoadRef = useRef(true);
 
   // Track last notification to prevent duplicates
   const [lastNotificationTime, setLastNotificationTime] = useState(0);
@@ -50,10 +53,12 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
           const savedSettings = await window.electronAPI.getSettings();
           if (savedSettings) {
             setSettings(savedSettings);
+            settingsRef.current = savedSettings;
 
-            // Reset timer if we're not on a break and it's the initial load
-            if (!isBreak && timeLeft === settings.workDuration * 60) {
+            // Only reset timer on initial load - not when settings change later
+            if (isInitialLoadRef.current) {
               setTimeLeft(savedSettings.workDuration * 60);
+              isInitialLoadRef.current = false;
             }
           }
         } else {
@@ -62,10 +67,12 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
           if (savedSettings) {
             const parsed = JSON.parse(savedSettings);
             setSettings(parsed);
+            settingsRef.current = parsed;
 
-            // Reset timer if we're not on a break and it's the initial load
-            if (!isBreak && timeLeft === settings.workDuration * 60) {
+            // Only reset timer on initial load - not when settings change later
+            if (isInitialLoadRef.current) {
               setTimeLeft(parsed.workDuration * 60);
+              isInitialLoadRef.current = false;
             }
           }
         }
@@ -96,9 +103,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
       if (window.electronAPI) {
         // Use Electron notification
         window.electronAPI.showNotification({
-          type: settings.notificationType,
+          type: settingsRef.current.notificationType,
           message: "Time to take a break!",
-          duration: settings.breakDuration,
+          duration: settingsRef.current.breakDuration,
         });
       } else {
         // Fallback to browser notification
@@ -119,7 +126,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error) {
       console.error("Error showing notification:", error);
     }
-  }, [settings, lastNotificationTime]);
+  }, [lastNotificationTime]);
 
   // Timer logic
   useEffect(() => {
@@ -132,11 +139,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
           if (!isBreak) {
             showNotification();
             setIsBreak(true);
-            return settings.breakDuration;
+            return settingsRef.current.breakDuration;
           } else {
             // If break period ended, start a new work period
             setIsBreak(false);
-            return settings.workDuration * 60;
+            return settingsRef.current.workDuration * 60;
           }
         }
         return prev - 1;
@@ -144,7 +151,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
     }, 1000);
 
     return () => clearInterval(timerInterval);
-  }, [isPaused, isBreak, settings, showNotification]);
+  }, [isPaused, isBreak, showNotification]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
@@ -159,7 +166,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleSkipToBreak = () => {
     if (!isBreak) {
       setIsBreak(true);
-      setTimeLeft(settings.breakDuration);
+      setTimeLeft(settingsRef.current.breakDuration);
       showNotification();
     }
   };
@@ -167,9 +174,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({
   // Reset timer
   const handleReset = () => {
     if (isBreak) {
-      setTimeLeft(settings.breakDuration);
+      setTimeLeft(settingsRef.current.breakDuration);
     } else {
-      setTimeLeft(settings.workDuration * 60);
+      setTimeLeft(settingsRef.current.workDuration * 60);
     }
     setIsPaused(false);
   };
